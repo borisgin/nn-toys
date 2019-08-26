@@ -22,35 +22,55 @@ def grad(x,y):
     return (dx,dy)
 
 def init_weights(init_range):
-    x_t= random.uniform(-init_range, init_range)
-    y_t= random.uniform(-init_range, init_range)
+    x_0= random.uniform(-init_range, init_range)
+    y_0= random.uniform(-init_range, init_range)
     #x_t = -10.0; y_t=0.005
-    return (x_t, y_t)
+    return (x_0, y_0)
 
-def learning_rate(lr0, lr_min, lr_policy, t, xt, yt, rampup=0):
-    lr=lr0
+def learning_rate(lr0, lr_policy, t, steps, lr_min=0, rampup=0):
     if (rampup > 0) and (t < rampup):
         lr = lr0  * t / rampup
     else:
         if (lr_policy == 'fixed'):
-            lr=lr0
-        if (lr_policy == 'decay'):
-            lr = lr0 / math.sqrt(1. + (t-rampup))
-        elif (lr_policy == 'opt'):
-            n=xt*xt + yt*yt
-            d=(xt*yt - 1) * xt*yt
-            epsilon= 0.000001
-            if abs(d) < epsilon :
-                 d=sign(d)*epsilon
-            else:
-                if n*n > 8*d:
-                    lr=(n - math.sqrt(n*n - 8*d))/(8*d)
-                else:
-                    lr=n/(8*d)
-
-    lr= lr0*max(abs(lr), lr_min)
-
+            lr = lr0
+        if (lr_policy == 'poly'):
+            r = 1. - (t - rampup) / (steps - rampup)
+            lr = lr0 * r * r
+        elif (lr_policy == 'cos'):
+            r = 1. - (t - rampup) / (steps - rampup)
+            lr = lr0 *  math.cos(3.1415 * r + 1) / 2.
+    lr= max(abs(lr), lr_min)
     return lr
+
+def add_grad_noise(dx, dy, grad_noise):
+    dx += grad_noise * abs(dx) * random.uniform(-1, 1)
+    dy += grad_noise * abs(dy) * random.uniform(-1, 1)
+    return (dx, dy)
+
+def plot_trajectory(xt, yt):
+    A = 10
+    xmin, xmax, xstep = -A, A, .1
+    ymin, ymax, ystep = -A, A, .1
+
+    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
+    z = f(x, y)
+    ax = plt.axes()
+    ax.contour(x, y, z, levels=np.arange(0, 2, 0.2),  cmap=plt.cm.jet) # norm=LogNorm())
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+
+    s=np.arange(xmin, - xstep, xstep)
+    t=1/s
+    plt.plot(s, t, color='black', linestyle='dashed')
+    s = np.arange(xstep, xmax+ xstep, xstep)
+    t = 1 / s
+    plt.plot(s, t, color='black', linestyle='dashed')
+
+    plt.plot(xt, yt, color='red' ) #marker='*', linestyle='dashed')
+    plt.show()
+
 
 def plot_loss(loss):
     T=loss.size
@@ -61,35 +81,103 @@ def plot_loss(loss):
     plt.axis([0., T+1, 0., max_loss+0.1])
     plt.show()
 
-#=============================================================
-'''
-xmin, xmax, xstep = -1.5, 1.5, .1
-ymin, ymax, ystep = -1.5, 1.5, .1
-x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
-#z = (x*y-1)*(x*y-1)
-z = f(x,y)
+class SGD(object):
+    def __init__(self, momentum=0.95):
+        self.momentum = momentum
+        self.m_x = 0
+        self.m_y = 0
 
-fig, ax = plt.subplots(figsize=(10, 10))
-#ax = plt.axes(projection='3d', elev=50, azim=-50)
-#ax.plot_surface(x, y, z, norm=LogNorm(), rstride=1, cstride=1, edgecolor='none', alpha=.8, cmap=plt.cm.jet)
-ax.contour(x, y, z, levels=np.arange(0, 10, 0.1), norm=LogNorm(), cmap=plt.cm.jet)
-ax.set_xlabel('$x$')
-ax.set_ylabel('$y$')
-#ax.set_zlabel('$z$')
-ax.set_xlim((xmin, xmax))
-ax.set_ylim((ymin, ymax))
-plt.show()
+    def get_update(self, dx, dy):
+        if self.m_x ==0 and self.m_y ==0:
+            self.m_x = dx
+            self.m_y = dy
+        else:
+            self.m_x = self.momentum * self.m_x + dx
+            self.m_y = self.momentum * self.m_y + dy
+        return  (self.m_x, self.m_y)
 
-fig, ax = plt.subplots(figsize=(10, 10))
-dz_dx, dz_dy=grad(x,y)
-#ax.contour(x, y, z, levels=np.logspace(0, 5, 35), norm=LogNorm(), cmap=plt.cm.jet)
-ax.quiver(x, y, -dz_dx, -dz_dy) # alpha=1)
-ax.set_xlabel('$x$')
-ax.set_ylabel('$y$')
-ax.set_xlim((xmin, xmax))
-ax.set_ylim((ymin, ymax))
-plt.show()
-'''
+
+class Adam(object):
+    def __init__(self, beta1=0.95, beta2=0.99):
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.v_x = 0
+        self.v_y = 0
+        self.m_x = 0
+        self.m_y = 0
+
+    def get_update(self, dx, dy):
+        if self.m_x==0 and self.m_y==0:
+            self.v_x = dx * dx
+            self.v_y = dy * dy
+            self.m_x = dx
+            self.m_y = dy
+        else:
+            self.v_x = self.beta2 * self.v_x + (1 - self.beta2) * dx * dx
+            self.v_y = self.beta2 * self.v_y + (1 - self.beta2) * dy * dy
+
+            self.m_x = self.beta1 * self.m_x + (1- self.beta1) * dx
+            self.m_y = self.beta1 * self.m_y + (1- self.beta1) * dy
+        ux = self.m_x / math.sqrt(self.v_x )
+        uy = self.m_y / math.sqrt(self.v_y)
+        return (ux, uy)
+
+class Novograd(object):
+    def __init__(self, beta1=0.95, beta2=0.0):
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.v_x = 0
+        self.v_y = 0
+        self.m_x = 0
+        self.m_y = 0
+
+    def get_update(self, dx, dy):
+        if self.m_x==0 and self.m_y==0:
+            self.v_x = dx * dx
+            self.v_y = dy * dy
+            self.m_x = dx
+            self.m_y = dy
+        else:
+            self.v_x = self.beta2 * self.v_x + (1 - self.beta2) * dx * dx
+            self.v_y = self.beta2 * self.v_y + (1 - self.beta2) * dy * dy
+            self.m_x = self.beta1 * self.m_x + (1- self.beta1) * dx / math.sqrt(self.v_x)
+            self.m_y = self.beta1 * self.m_y + (1- self.beta1) * dy / math.sqrt(self.v_y)
+            # self.m_x = self.beta1 * self.m_x + (1- self.beta1) * dx / abs(dx)
+            # self.m_y = self.beta1 * self.m_y + (1- self.beta1) * dy / abs(dy)
+        ux = self.m_x
+        uy = self.m_y
+        return (ux, uy)
+
+
+def show_fun(f):
+    A = 10
+    xmin, xmax, xstep = -A, A, .1
+    ymin, ymax, ystep = -A, A, .1
+
+    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
+    z = f(x, y)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    # ax = plt.axes(projection='3d', elev=50, azim=-50)
+    # ax.plot_surface(x, y, z, norm=LogNorm(), rstride=1, cstride=1, edgecolor='none', alpha=.8, cmap=plt.cm.jet)
+
+    ax.contour(x, y, z, levels=np.arange(0, A, 0.1), norm=LogNorm(), cmap=plt.cm.jet)
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    # ax.set_zlabel('$z$')
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+    plt.show()
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    dz_dx, dz_dy = grad(x, y)
+    # ax.contour(x, y, z, levels=np.logspace(0, 5, 35), norm=LogNorm(), cmap=plt.cm.jet)
+    ax.quiver(x, y, -dz_dx, -dz_dy)  # alpha=1)
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+    plt.show()
 
 '''
 fig = plt.figure(figsize=(14,6))
@@ -105,79 +193,57 @@ cb = fig.colorbar(p, shrink=0.5)
 plt.show()
 '''
 
-
 #--------------------------------------------------
-N=100
+
+N=200
 p=np.zeros((N,3), dtype=float)
 
 lr_min=0.00001
-lr0 = 0.2 #0.1
-lr_policy = 'opt' #'decay'#'opt'
-
-grad_noise= 3.0
-
+lr0 = 0.1     #0.1
+lr_policy = 'poly'
 rampup = 0
-larc = False #
-eta  = 0.1
-epsilon=0.1
-
-momentum = 0.9 #
-wd=0.000 #5 #0.001
-
+momentum = 0.95
+beta1=0.95
+beta2=0.001
+wd=0.001
+grad_noise = 0    #3.0
+decoupled_wd = True
 init_range= 0.5
-xt,yt = init_weights(init_range) #1.005001 #0.05
-#xt=0.1 ; yt = -0.2
+(xt,yt) = init_weights(init_range)
+xt = -.01 ; yt = 4
 
-#-------------------------------
-lr=lr0
-p[0,:]=[xt, yt, f(xt,yt)]
-m_x=0
-m_y=0
+# optimzer=SGD(momentum=momentum)
+# # optimzer=Adam(beta1, beta2)
+optimzer=Novograd(beta1, beta2)
+
 for t in range(0, N-1):
-    lr=learning_rate(lr0, lr_min, lr_policy, t, xt, yt, rampup)
+    if abs(xt) >  100 or abs (yt)>100:
+        break
 
-    dx,dy= grad(xt,yt)
+    p[t, :] = [xt, yt, f(xt, yt)]
+    (dx,dy)= grad(xt,yt)
     if grad_noise > 0.0 :
-        dx += grad_noise * abs(dx) * random.uniform(-1, 1)
-        dy += grad_noise * abs(dy) * random.uniform(-1, 1)
+        (dx, dy) = add_grad_noise(dx, dy, grad_noise)
 
-    if wd > 0.0 :
-        dx += wd*xt
-        dy += wd*yt
+    if wd > 0.0 and not decoupled_wd:
+        dx += wd * xt
+        dy += wd * yt
 
-    #print (dx,dy)
-    if larc:
-        # if (xt*xt + yt*yt< epsilon): # and (abs(yt) < epsilon):
-        #     dx = (dx / abs(dx)) * (1. + eta) * abs(xt) / lr
-        #     dy = (dy / abs(dy)) * (2. + eta) * abs(yt) / lr
-        #if (abs(xt) + abs(yt)> epsilon):
-        if (abs(xt) > epsilon):
-            if abs(dx) > abs(xt)*eta:
-                dx = dx * max(epsilon, abs(xt)* eta / abs(dx))
-                #dx = (dx/abs(dx)) * eta * abs(xt)
-#        else:
-#             dx = (dx / abs(dx)) * (1 + eta) * abs(xt) / lr
-        if (abs(yt) > epsilon):
-            if abs(dy) > abs(yt)*eta :
-                dy = dy * max(epsilon, abs(yt) * eta / abs(dy))
-             #dy = dy / abs(dy) * abs(yt)  * eta
-                #dy = (dy/abs(dy)) * 2* eta * abs(yt)
+    ux, uy = optimzer.get_update(dx,dy)
 
-    #print (dx,dy)
-    if (momentum>0):
-        m_x = momentum*m_x + (1-momentum)*dx
-        m_y = momentum*m_y + (1-momentum)*dy
-        dx=m_x
-        dy=m_y
+    if wd > 0.0 and decoupled_wd:
+        ux += wd * xt
+        uy += wd * yt
 
-    #lr = max(lr_min,  lr0* abs((xt * yt - 1)))
-
-    xt = xt - lr*dx
-    yt = yt - lr*dy
-
+    lr = learning_rate(lr0=lr0, lr_policy=lr_policy, t=t, steps=N, rampup=rampup, lr_min=0)
+    xt = xt - lr * ux
+    yt = yt - lr * uy
     p[t+1,:] = [xt, yt, f(xt,yt)]
 
-print p
+print(p)
+x=p[:,0]
+y=p[:,1]
+plot_trajectory(x, y)
 loss=p[:,2]
 #print loss
 plot_loss(loss)
