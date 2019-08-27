@@ -2,6 +2,7 @@
 import math
 import random
 import matplotlib.pyplot as plt
+# import matplotlib.pylab as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
@@ -36,9 +37,13 @@ def learning_rate(lr0, lr_policy, t, steps, lr_min=0, rampup=0):
         if (lr_policy == 'poly'):
             r = 1. - (t - rampup) / (steps - rampup)
             lr = lr0 * r * r
-        elif (lr_policy == 'cos'):
+        elif (lr_policy == 'cosine'):
             r = 1. - (t - rampup) / (steps - rampup)
             lr = lr0 *  math.cos(3.1415 * r + 1) / 2.
+        else:
+            print("lr policy {} not supported".format(lr_policy))
+            lr=lr0
+
     lr= max(abs(lr), lr_min)
     return lr
 
@@ -46,31 +51,6 @@ def add_grad_noise(dx, dy, grad_noise):
     dx += grad_noise * abs(dx) * random.uniform(-1, 1)
     dy += grad_noise * abs(dy) * random.uniform(-1, 1)
     return (dx, dy)
-
-def plot_trajectory(xt, yt):
-    A = 10
-    xmin, xmax, xstep = -A, A, .1
-    ymin, ymax, ystep = -A, A, .1
-
-    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
-    z = f(x, y)
-    ax = plt.axes()
-    ax.contour(x, y, z, levels=np.arange(0, 2, 0.2),  cmap=plt.cm.jet) # norm=LogNorm())
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
-    ax.set_xlim((xmin, xmax))
-    ax.set_ylim((ymin, ymax))
-
-    s=np.arange(xmin, - xstep, xstep)
-    t=1/s
-    plt.plot(s, t, color='black', linestyle='dashed')
-    s = np.arange(xstep, xmax+ xstep, xstep)
-    t = 1 / s
-    plt.plot(s, t, color='black', linestyle='dashed')
-
-    plt.plot(xt, yt, color='red' ) #marker='*', linestyle='dashed')
-    plt.show()
-
 
 def plot_loss(loss):
     T=loss.size
@@ -86,6 +66,9 @@ class SGD(object):
         self.momentum = momentum
         self.m_x = 0
         self.m_y = 0
+
+    def name(self):
+        return "Adam"
 
     def get_update(self, dx, dy):
         if self.m_x ==0 and self.m_y ==0:
@@ -105,6 +88,9 @@ class Adam(object):
         self.v_y = 0
         self.m_x = 0
         self.m_y = 0
+
+    def name(self):
+        return "Adam"
 
     def get_update(self, dx, dy):
         if self.m_x==0 and self.m_y==0:
@@ -130,6 +116,9 @@ class Novograd(object):
         self.v_y = 0
         self.m_x = 0
         self.m_y = 0
+
+    def name(self):
+        return "Novograd"
 
     def get_update(self, dx, dy):
         if self.m_x==0 and self.m_y==0:
@@ -195,26 +184,52 @@ plt.show()
 
 #--------------------------------------------------
 
+
+def plot_trajectory(xt, yt):
+    A = 10
+    xmin, xmax, xstep = -A, A, .1
+    ymin, ymax, ystep = -A, A, .1
+
+    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
+    z = f(x, y)
+    ax = plt.axes()
+    ax.contour(x, y, z, levels=np.arange(0, 2, 0.2),  cmap=plt.cm.jet) # norm=LogNorm())
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+
+    s=np.arange(xmin, - xstep, xstep)
+    t=1/s
+    plt.plot(s, t, color='black', linestyle='dashed')
+    s = np.arange(xstep, xmax+ xstep, xstep)
+    t = 1 / s
+    plt.plot(s, t, color='black', linestyle='dashed')
+
+    # plt.plot(xt, yt, color='red',) #marker='*', linestyle='dashed')
+    plt.quiver(xt[:-1], yt[:-1], xt[1:]- xt[:-1], yt[1:]-yt[:-1], color='red', angles='xy', scale_units='xy',  scale=1)
+    plt.show()
+
+
 N=200
 p=np.zeros((N,3), dtype=float)
 
 lr_min=0.00001
-lr0 = 0.1     #0.1
 lr_policy = 'poly'
-rampup = 0
-momentum = 0.95
-beta1=0.95
-beta2=0.001
-wd=0.001
-grad_noise = 0    #3.0
-decoupled_wd = True
-init_range= 0.5
-(xt,yt) = init_weights(init_range)
-xt = -.01 ; yt = 4
+lr_policy = 'cosine'
 
-# optimzer=SGD(momentum=momentum)
-# # optimzer=Adam(beta1, beta2)
-optimzer=Novograd(beta1, beta2)
+lr0 = 0.5;
+rampup = 0;
+wd=0.2
+grad_noise = 0.1 #.0
+init_range= 0.9
+(xt,yt) = init_weights(init_range)
+# xt = 0.01 ; yt = -4
+
+optimzer=SGD(momentum=0.95);   decoupled_wd = False; lr0 = 0.01
+optimzer=Adam(beta1=0.95, beta2=0.99);  decoupled_wd = False; lr0 = 0.3
+optimzer=Adam(beta1=0.95, beta2=0.99);decoupled_wd = True;    lr0 = 0.3; wd=0.1
+# optimzer=Novograd(beta1=0.95, beta2=0.5); decoupled_wd = True; lr0 = 0.05 ; wd=0.1
 
 for t in range(0, N-1):
     if abs(xt) >  100 or abs (yt)>100:
