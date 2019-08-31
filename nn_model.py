@@ -22,28 +22,32 @@ def grad(x,y):
     dy = 2*x*(x*y-1)
     return (dx,dy)
 
+def uni_weights(init_range):
+    phi=random.uniform(0, 2*3.1415)
+    x_0 = init_range * math.cos(phi)
+    y_0 = init_range * math.sin(phi)
+    return (x_0, y_0)
+
 def init_weights(init_range):
-    x_0= random.uniform(-init_range, init_range)
-    y_0= random.uniform(-init_range, init_range)
-    #x_t = -10.0; y_t=0.005
+    x_0 = random.uniform(-init_range, init_range)
+    y_0 = random.uniform(-init_range, init_range)
     return (x_0, y_0)
 
 def learning_rate(lr0, lr_policy, t, steps, lr_min=0, rampup=0):
     if (rampup > 0) and (t < rampup):
         lr = lr0  * t / rampup
     else:
-        if (lr_policy == 'fixed'):
-            lr = lr0
         if (lr_policy == 'poly'):
             r = 1. - (t - rampup) / (steps - rampup)
             lr = lr0 * r * r
         elif (lr_policy == 'cosine'):
             r = 1. - (t - rampup) / (steps - rampup)
             lr = lr0 *  math.cos(3.1415 * r + 1) / 2.
+        elif (lr_policy == 'fixed'):
+            lr = lr0
         else:
             print("lr policy {} not supported".format(lr_policy))
             lr=lr0
-
     lr= max(abs(lr), lr_min)
     return lr
 
@@ -137,6 +141,36 @@ class Novograd(object):
         uy = self.m_y
         return (ux, uy)
 
+class Novograd_v1(object):
+    def __init__(self, beta1=0.95, beta2=0.0):
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.v_x = 0
+        self.v_y = 0
+        self.m_x = 0
+        self.m_y = 0
+
+    def name(self):
+        return "Novograd"
+
+    def get_update(self, dx, dy):
+        if self.m_x==0 and self.m_y==0:
+            self.v_x = abs(dx)
+            self.v_y = abs(dy)
+            self.m_x = dx
+            self.m_y = dy
+        else:
+            self.v_x = self.beta2 * self.v_x + (1 - self.beta2) * abs(dx)
+            self.v_y = self.beta2 * self.v_y + (1 - self.beta2) * abs(dy)
+            self.m_x = self.beta1 * self.m_x + (1- self.beta1) * dx / self.v_x
+            self.m_y = self.beta1 * self.m_y + (1- self.beta1) * dy / self.v_y
+            # self.m_x = self.beta1 * self.m_x + (1- self.beta1) * dx / abs(dx)
+            # self.m_y = self.beta1 * self.m_y + (1- self.beta1) * dy / abs(dy)
+        ux = self.m_x
+        uy = self.m_y
+        return (ux, uy)
+
+
 
 def show_fun(f):
     A = 10
@@ -186,7 +220,7 @@ plt.show()
 
 
 def plot_trajectory(xt, yt):
-    A = 10
+    A = 4
     xmin, xmax, xstep = -A, A, .1
     ymin, ymax, ystep = -A, A, .1
 
@@ -210,26 +244,31 @@ def plot_trajectory(xt, yt):
     plt.quiver(xt[:-1], yt[:-1], xt[1:]- xt[:-1], yt[1:]-yt[:-1], color='red', angles='xy', scale_units='xy',  scale=1)
     plt.show()
 
+#================================================
 
-N=200
+N=1000
 p=np.zeros((N,3), dtype=float)
 
 lr_min=0.00001
 lr_policy = 'poly'
 lr_policy = 'cosine'
+lr_policy = 'fixed'
 
 lr0 = 0.5;
 rampup = 0;
 wd=0.2
-grad_noise = 0.1 #.0
-init_range= 0.9
-(xt,yt) = init_weights(init_range)
+grad_noise = 0.0
+
+init_range = 0.5
+# (xt,yt) = init_weights(init_range)
+(xt,yt) = uni_weights(init_range)
 # xt = 0.01 ; yt = -4
 
-optimzer=SGD(momentum=0.95);   decoupled_wd = False; lr0 = 0.01
-optimzer=Adam(beta1=0.95, beta2=0.99);  decoupled_wd = False; lr0 = 0.3
-optimzer=Adam(beta1=0.95, beta2=0.99);decoupled_wd = True;    lr0 = 0.3; wd=0.1
-# optimzer=Novograd(beta1=0.95, beta2=0.5); decoupled_wd = True; lr0 = 0.05 ; wd=0.1
+optimzer=SGD(momentum=0.95);            decoupled_wd = False; lr0 = 0.1; wd=0.1
+optimzer=Adam(beta1=0.95, beta2=0.5);   decoupled_wd = False; lr0 = 0.1; wd=0.1
+optimzer=Adam(beta1=0.95, beta2=0.5);   decoupled_wd = True;  lr0 = 0.1; wd=0.1
+optimzer=Novograd_v1(beta1=0.95, beta2=0.5); decoupled_wd = True;  lr0 = 0.1; wd=0.1
+optimzer=Novograd(beta1=0.95, beta2=0.5);    decoupled_wd = True;  lr0 = 0.1; wd=0.1
 
 for t in range(0, N-1):
     if abs(xt) >  100 or abs (yt)>100:
