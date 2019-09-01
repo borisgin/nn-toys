@@ -22,10 +22,11 @@ def grad(x,y):
     dy = 2*x*(x*y-1)
     return (dx,dy)
 
-def uni_weights(init_range):
-    phi=random.uniform(0, 2*3.1415)
-    x_0 = init_range * math.cos(phi)
-    y_0 = init_range * math.sin(phi)
+def polar_weights(r, phi=None):
+    if phi==None:
+        phi=random.uniform(0, 2*3.1415)
+    x_0 = r * math.cos(phi)
+    y_0 = r * math.sin(phi)
     return (x_0, y_0)
 
 def init_weights(init_range):
@@ -245,59 +246,62 @@ def plot_trajectory(xt, yt):
     plt.show()
 
 #================================================
+def main():
 
-N=1000
-p=np.zeros((N,3), dtype=float)
+    lr0 = 0.05; wd=0.1; beta2 = 0.5
+    optimzer=SGD(momentum=0.95);              decoupled_wd = False;     # lr0 = 0.05; wd=0.1
+    optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = False;     # lr0 = 0.05; wd=0.1
+    optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = True;      # lr0 = 0.05; wd=0.1
+    optimzer=Novograd_v1(beta1=0.95, beta2=beta2); decoupled_wd = True; # lr0 = 0.05; wd=0.1
+    optimzer=Novograd(beta1=0.95, beta2=beta2);    decoupled_wd = True; # lr0 = 0.05; wd=0.1
 
-lr_min=0.00001
-lr_policy = 'poly'
-lr_policy = 'cosine'
-lr_policy = 'fixed'
+    grad_noise = 0.0
 
-lr0 = 0.5;
-rampup = 0;
-wd=0.2
-grad_noise = 0.0
+    init_range = 0.5;
+    (xt,yt) = polar_weights(r=init_range, phi=0.1)
+    # (xt,yt) = init_weights(init_range)
+    # xt = 0.01 ; yt = -4
 
-init_range = 0.5
-# (xt,yt) = init_weights(init_range)
-(xt,yt) = uni_weights(init_range)
-# xt = 0.01 ; yt = -4
+    # lr0 = 0.5; wd=0.2
+    # lr_policy = 'poly'
+    # lr_policy = 'cosine'
+    lr_policy = 'fixed'
+    rampup = 0;
+    lr_min=0.0
 
-optimzer=SGD(momentum=0.95);            decoupled_wd = False; lr0 = 0.1; wd=0.1
-optimzer=Adam(beta1=0.95, beta2=0.5);   decoupled_wd = False; lr0 = 0.1; wd=0.1
-optimzer=Adam(beta1=0.95, beta2=0.5);   decoupled_wd = True;  lr0 = 0.1; wd=0.1
-optimzer=Novograd_v1(beta1=0.95, beta2=0.5); decoupled_wd = True;  lr0 = 0.1; wd=0.1
-optimzer=Novograd(beta1=0.95, beta2=0.5);    decoupled_wd = True;  lr0 = 0.1; wd=0.1
+    N = 1000
+    p = np.zeros((N,3), dtype=float)
+    for t in range(0, N-1):
+        if abs(xt) >  100 or abs (yt) > 100:
+            break
+        p[t, :] = [xt, yt, f(xt, yt)]
+        (dx,dy)= grad(xt,yt)
+        if grad_noise > 0.0 :
+            (dx, dy) = add_grad_noise(dx, dy, grad_noise)
+        if wd > 0.0 and not decoupled_wd:
+            dx += wd * xt
+            dy += wd * yt
 
-for t in range(0, N-1):
-    if abs(xt) >  100 or abs (yt)>100:
-        break
+        ux, uy = optimzer.get_update(dx,dy)
 
-    p[t, :] = [xt, yt, f(xt, yt)]
-    (dx,dy)= grad(xt,yt)
-    if grad_noise > 0.0 :
-        (dx, dy) = add_grad_noise(dx, dy, grad_noise)
+        if wd > 0.0 and decoupled_wd:
+            ux += wd * xt
+            uy += wd * yt
 
-    if wd > 0.0 and not decoupled_wd:
-        dx += wd * xt
-        dy += wd * yt
+        lr = learning_rate(lr0=lr0, lr_policy=lr_policy, t=t, steps=N, rampup=rampup, lr_min=0)
+        xt = xt - lr * ux
+        yt = yt - lr * uy
+        p[t+1,:] = [xt, yt, f(xt,yt)]
 
-    ux, uy = optimzer.get_update(dx,dy)
 
-    if wd > 0.0 and decoupled_wd:
-        ux += wd * xt
-        uy += wd * yt
+    print(p)
+    x = p[:,0]
+    y = p[:,1]
+    loss = p[:,2]
 
-    lr = learning_rate(lr0=lr0, lr_policy=lr_policy, t=t, steps=N, rampup=rampup, lr_min=0)
-    xt = xt - lr * ux
-    yt = yt - lr * uy
-    p[t+1,:] = [xt, yt, f(xt,yt)]
+    plot_trajectory(x, y)
+    #print loss
+    plot_loss(loss)
 
-print(p)
-x=p[:,0]
-y=p[:,1]
-plot_trajectory(x, y)
-loss=p[:,2]
-#print loss
-plot_loss(loss)
+if __name__ == "__main__":
+    main()
