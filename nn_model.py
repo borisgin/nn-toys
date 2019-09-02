@@ -171,10 +171,46 @@ class Novograd_v1(object):
         uy = self.m_y
         return (ux, uy)
 
+def show_heatmap(f, xt, yt ):
+    A = 4
+    xmin, xmax, xstep = -A, A, .1
+    ymin, ymax, ystep = -A, A, .1
+    X = np.arange(xmin, xmax + xstep, xstep)
+    Y = np.arange(ymin, ymax + ystep, ystep)
+    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep), np.arange(ymin, ymax + ystep, ystep))
+    z = f(x, y)
+    z_min, z_max = -np.abs(z).max(), np.abs(z).max()
 
+    fig, ax = plt.subplots(figsize=(10, 10))
+    s=np.arange(xmin, - xstep, xstep)
+    t= 1/s
+    t = np.clip(t, -A, A)
+    plt.plot(s, t, color='yellow', linestyle='dashed')
+    s = np.arange(xstep, xmax+ xstep, xstep)
+    t = 1 / s
+    t = np.clip(t, -A, A)
+    plt.plot(s, t, color='yellow', linestyle='dashed')
+
+    im = plt.imshow(
+        z,
+        cmap=plt.cm.jet,
+        extent=(-A, A, -A, A),
+        origin='lower',
+        interpolation='bilinear'
+        )
+    fig.colorbar(im);
+    ax.set_xlabel('$w_1$')
+    ax.set_ylabel('$w_2$')
+    plt.grid(True)
+    plt.title("$y=(w_1*w_2-1)^2$")
+
+    plt.quiver(xt[:-1], yt[:-1], xt[1:] - xt[:-1], yt[1:] - yt[:-1], color='red', angles='xy', scale_units='xy',
+               scale=1)
+
+    plt.show()
 
 def show_fun(f):
-    A = 10
+    A = 4
     xmin, xmax, xstep = -A, A, .1
     ymin, ymax, ystep = -A, A, .1
 
@@ -186,21 +222,37 @@ def show_fun(f):
     # ax.plot_surface(x, y, z, norm=LogNorm(), rstride=1, cstride=1, edgecolor='none', alpha=.8, cmap=plt.cm.jet)
 
     ax.contour(x, y, z, levels=np.arange(0, A, 0.1), norm=LogNorm(), cmap=plt.cm.jet)
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
-    # ax.set_zlabel('$z$')
+    ax.set_xlabel('$w_1$')
+    ax.set_ylabel('$w_2$')
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
+
+    s=np.arange(xmin, - xstep, xstep)
+    t=1/s
+    t = np.clip(t, -A, A)
+    plt.plot(s, t, color='black', linestyle='dashed')
+    s = np.arange(xstep, xmax+ xstep, xstep)
+    t = 1 / s
+    t = np.clip(t, -A, A)
+    plt.plot(s, t, color='black', linestyle='dashed')
     plt.show()
 
     fig, ax = plt.subplots(figsize=(10, 10))
     dz_dx, dz_dy = grad(x, y)
     # ax.contour(x, y, z, levels=np.logspace(0, 5, 35), norm=LogNorm(), cmap=plt.cm.jet)
     ax.quiver(x, y, -dz_dx, -dz_dy)  # alpha=1)
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
+    ax.set_xlabel('$w_1$')
+    ax.set_ylabel('$w_2$')
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
+
+    s=np.arange(xmin, - xstep, xstep)
+    t=1/s
+    plt.plot(s, t, color='black', linestyle='dashed')
+    s = np.arange(xstep, xmax+ xstep, xstep)
+    t = 1 / s
+    plt.plot(s, t, color='black', linestyle='dashed')
+
     plt.show()
 
 '''
@@ -229,8 +281,8 @@ def plot_trajectory(xt, yt):
     z = f(x, y)
     ax = plt.axes()
     ax.contour(x, y, z, levels=np.arange(0, 2, 0.2),  cmap=plt.cm.jet) # norm=LogNorm())
-    ax.set_xlabel('$x$')
-    ax.set_ylabel('$y$')
+    ax.set_xlabel('$w_1$')
+    ax.set_ylabel('$w_2$')
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
 
@@ -243,17 +295,20 @@ def plot_trajectory(xt, yt):
 
     # plt.plot(xt, yt, color='red',) #marker='*', linestyle='dashed')
     plt.quiver(xt[:-1], yt[:-1], xt[1:]- xt[:-1], yt[1:]-yt[:-1], color='red', angles='xy', scale_units='xy',  scale=1)
+    plt.grid(True)
+    plt.title("$y=(w_1*w_2-1)^2$")
     plt.show()
 
 #================================================
 def main():
 
+
     lr0 = 0.05; wd=0.1; beta2 = 0.5
     optimzer=SGD(momentum=0.95);              decoupled_wd = False;     # lr0 = 0.05; wd=0.1
-    optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = False;     # lr0 = 0.05; wd=0.1
-    optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = True;      # lr0 = 0.05; wd=0.1
-    optimzer=Novograd_v1(beta1=0.95, beta2=beta2); decoupled_wd = True; # lr0 = 0.05; wd=0.1
-    optimzer=Novograd(beta1=0.95, beta2=beta2);    decoupled_wd = True; # lr0 = 0.05; wd=0.1
+    # optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = False;     # lr0 = 0.05; wd=0.1
+    # optimzer=Adam(beta1=0.95, beta2=beta2);   decoupled_wd = True;      # lr0 = 0.05; wd=0.1
+    # optimzer=Novograd_v1(beta1=0.95, beta2=beta2); decoupled_wd = True; # lr0 = 0.05; wd=0.1
+    # optimzer=Novograd(beta1=0.95, beta2=beta2);    decoupled_wd = True; # lr0 = 0.05; wd=0.1
 
     grad_noise = 0.0
 
@@ -299,9 +354,10 @@ def main():
     y = p[:,1]
     loss = p[:,2]
 
+    show_heatmap(f, x, y)
     plot_trajectory(x, y)
-    #print loss
-    plot_loss(loss)
+    # #print loss
+    # plot_loss(loss)
 
 if __name__ == "__main__":
     main()
