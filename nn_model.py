@@ -1,9 +1,11 @@
-# http://tiao.io/notes/visualizing-and-animating-optimization-algorithms-with-matplotlib/
+# http://louistiao.me/notes/visualizing-and-animating-optimization-algorithms-with-matplotlib/
+
 import math
 import random
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
+from matplotlib.patches import Circle
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import animation
@@ -290,12 +292,15 @@ def show_fun(f):
 
 def plot_trajectory(xt, yt, opt_name):
     A = 4
+
     xmin, xmax, xstep = -A, A, .1
     ymin, ymax, ystep = -A, A, .1
 
     x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep),
                        np.arange(ymin, ymax + ystep, ystep))
+
     z = f(x, y)
+
     ax = plt.axes()
     ax.contour(x, y, z, levels=np.arange(0, 2, 0.2), cmap=plt.cm.jet)
     ax.set_xlabel('$w_1$')
@@ -309,11 +314,74 @@ def plot_trajectory(xt, yt, opt_name):
     s = np.arange(xstep, xmax + xstep, xstep)
     t = 1 / s
     plt.plot(s, t, color='black', linestyle='dashed')
+    solutions, = plt.plot(s, t, color='black',
+                          linestyle='dashed', label="global solutions")
 
     plt.quiver(xt[:-1], yt[:-1], xt[1:] - xt[:-1], yt[1:] - yt[:-1],
                color='red', angles='xy', scale_units='xy', scale=1)
+
+    path, = plt.plot(xt[-1], yt[-1], #xt[-1] - xt[-2], yt[-1]- yt[-2],
+                     marker='o',
+                     color='red', label="path")
+
     plt.grid(True)
     plt.title("$y=(w_1*w_2-1)^2$ , {}".format(opt_name))
+
+    plt.legend(handles=[solutions, path], bbox_to_anchor=(0.35, 1))
+
+    plt.show()
+
+def plot_function():
+    A = 4
+    xmin, xmax, xstep = -A, A, .1
+    ymin, ymax, ystep = -A, A, .1
+
+    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep),
+                       np.arange(ymin, ymax + ystep, ystep))
+    z = f(x, y)
+
+    ax = plt.axes()
+    ax.contour(x, y, z, levels=np.arange(0, 2, 0.2), cmap=plt.cm.jet)
+    ax.set_xlabel('$w_1$')
+    ax.set_ylabel('$w_2$')
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
+
+    s = np.arange(xmin, - xstep, xstep)
+    t = 1 / s
+    plt.plot(s, t, color='black', linestyle='dashed')
+    s = np.arange(xstep, xmax + xstep, xstep)
+    t = 1 / s
+    solutions, = plt.plot(s, t, color='black', linestyle='dashed',
+                          label = "global solutions")
+
+    r = 0.3
+    phi = np.arange(0, 2*3.141592,0.1)
+    x = 1 + r * np.cos(phi)
+    y = 1 + r * np.sin(phi)
+    plt.plot(x, y, color='green')
+    x = -1 + r * np.cos(phi)
+    y = -1 + r * np.sin(phi)
+    good, = plt.plot(x, y, color='green', label="flat minimas")
+
+    r = 0.2
+    phi = np.arange(0, 2*3.141592,0.1)
+    x = 1. / 3 + r * np.cos(phi)
+    y = 3 + r * np.sin(phi)
+    plt.plot(x, y, color='red')
+    x = 3 + r * np.cos(phi)
+    y = 1. / 3 + r * np.sin(phi)
+    plt.plot(x, y, color='red')
+    x = -3 + r * np.cos(phi)
+    y = -1 / 3 + r * np.sin(phi)
+    plt.plot(x, y, color='red')
+    x = -1 / 3 + r * np.cos(phi)
+    y = -3. + r * np.sin(phi)
+    bad, = plt.plot(x, y, color='red', label='sharp mininmas')
+
+    plt.legend(handles=[solutions, good, bad], bbox_to_anchor=(0.35, 1))
+    plt.grid(True)
+    plt.title("$y=(w_1*w_2-1)^2$ ")
     plt.show()
 
 
@@ -321,8 +389,7 @@ def minimize(
         f, grad,
         xt, yt,
         optimizer,
-        lr_policy,
-        lr0, lr_min, rampup,
+        lr_policy, lr0, lr_min, rampup,
         wd, decoupled_wd,
         grad_noise=0):
 
@@ -357,42 +424,44 @@ def minimize(
 
 def main():
 
+    # plot_function()
+
     lr_policy = 'fixed'
-    lr0 = 0.05
+    lr0 = 0.5 #0.1
     rampup = 0
     lr_min = 0.0
     wd = 0.1
-    decoupled_wd = False
     beta1 = 0.95
-    beta2 = 0.95
-
-    optimizer = SGD(beta1=beta1)
-    optimizer = Adam(beta1=beta1, beta2=beta2)
-    # optimizer = Adam(beta1=beta1, beta2=beta2); decoupled_wd = True
-    # optimizer = Novograd_v1(beta1=beta1, beta2=beta2); decoupled_wd = True
-    # optimizer = Novograd(beta1=beta1, beta2=beta2); decoupled_wd = True
-    opt_name = optimizer.name()
-    if opt_name == "Adam" and decoupled_wd:
-        opt_name = "AdamW"
-
-    init_range = 0.5
-    (x0, y0) = polar_weights(r=init_range, phi=-0.1)
-    # (xt, yt) = init_weights(init_range)  #; xt = 0.01 ; yt = -4
-
+    beta2 = 0.5
     grad_noise = 0.0
+    init_range = 0.5
 
-    p = minimize(f=f, grad=grad, xt=x0, yt=y0, optimizer=optimizer,
-                 lr_policy=lr_policy, lr0=lr0, lr_min=lr_min, rampup=rampup,
-                 wd=wd, decoupled_wd=decoupled_wd, grad_noise=grad_noise)
-    x = p[:, 0]
-    y = p[:, 1]
-    loss = p[:, 2]
+    optimizers=[]
+    optimizers.append((SGD(beta1=beta1), False))
+    # optimizers.append((Adam(beta1=beta1, beta2=beta2), False))
+    # optimizers.append((Adam(beta1=beta1, beta2=beta2), True))
+    # # optimizers.append((Novograd_v1(beta1=beta1, beta2=beta2), True))
+    # optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
 
-    print("Last point: ({}, {}), L={}".format(x[-1], y[-1], loss[-1]))
-    # show_heatmap(f, x, y)
-    plot_trajectory(x, y, opt_name)
-    plot_loss(loss)
+    for optimizer, decoupled_wd in optimizers:
+        opt_name = optimizer.name()
+        if opt_name == "Adam" and decoupled_wd:
+            opt_name = "AdamW"
 
+        (x0, y0) = polar_weights(r=init_range, phi=-0.1)
+        # (xt, yt) = init_weights(init_range)  #; xt = 0.01 ; yt = -4
+
+        p = minimize(f=f, grad=grad, xt=x0, yt=y0, optimizer=optimizer,
+                     lr_policy=lr_policy, lr0=lr0, lr_min=lr_min, rampup=rampup,
+                     wd=wd, decoupled_wd=decoupled_wd, grad_noise=grad_noise)
+        x = p[:, 0]
+        y = p[:, 1]
+        loss = p[:, 2]
+
+        print("Last point: ({}, {}), L={}".format(x[-1], y[-1], loss[-1]))
+        plot_trajectory(x, y, opt_name)
+        # show_heatmap(f, x, y)
+        # plot_loss(loss)
 
 if __name__ == "__main__":
     main()
