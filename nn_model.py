@@ -1,4 +1,6 @@
 # http://louistiao.me/notes/visualizing-and-animating-optimization-algorithms-with-matplotlib/
+# https://bl.ocks.org/EmilienDupont/aaf429be5705b219aaaf8d691e27ca87
+# https://github.com/EmilienDupont/optimization-rosenbrock
 
 import math
 import random
@@ -17,9 +19,12 @@ def f(x, y):
     return z
 
 
-def grad(x, y):
-    dx = 2 * y * (x * y - 1)
-    dy = 2 * x * (x * y - 1)
+def grad(x, y, grad_noise=0):
+    z = 1
+    if grad_noise > 0.:
+        z = random.gauss(mu=1, sigma=grad_noise)
+    dx = 2 * y * (x * y - z)
+    dy = 2 * x * (x * y - z)
     return (dx, dy)
 
 
@@ -474,7 +479,8 @@ def minimize(
         optimizer,
         lr_policy, lr0, lr_min, rampup,
         wd, decoupled_wd,
-        grad_noise=0):
+        grad_noise=0,
+        lamb=False):
 
     N = 500
     p = np.zeros((N, 3), dtype=float)
@@ -483,9 +489,9 @@ def minimize(
         if abs(xt) > 100 or abs(yt) > 100:
             break
         p[t, :] = [xt, yt, f(xt, yt)]
-        (dx, dy) = grad(xt, yt)
-        if grad_noise > 0.0:
-            (dx, dy) = add_grad_noise(dx, dy, grad_noise)
+        (dx, dy) = grad(xt, yt, grad_noise)
+        # if grad_noise > 0.0:
+        #     (dx, dy) = add_grad_noise(dx, dy, grad_noise)
         if wd > 0.0 and not decoupled_wd:
             dx += wd * xt
             dy += wd * yt
@@ -495,6 +501,13 @@ def minimize(
         if wd > 0.0 and decoupled_wd:
             ux += wd * xt
             uy += wd * yt
+
+        if lamb:
+            u_norm = math.sqrt(ux * ux + uy * uy)
+            w_norm = math.sqrt(xt * xt + yt * yt)
+            k = w_norm / u_norm
+            ux = ux * k
+            uy = uy * k
 
         lr = learning_rate(lr0=lr0, lr_policy=lr_policy, t=t,
                            steps=N, rampup=rampup, lr_min=0)
@@ -514,9 +527,12 @@ def main():
     lr_min = 0.0
     wd = 0.1
     beta1 = 0.95
-    beta2 = 0.5
+    beta2 = 0.99
     grad_noise = 0.0
+    lamb = False
+
     init_range = 0.5
+    phi = -0.1
 
     optimizers = []
     optimizers.append((SGD(beta1=beta1), False))
@@ -530,13 +546,13 @@ def main():
         if opt_name == "Adam" and decoupled_wd:
             opt_name = "AdamW"
 
-        (x0, y0) = polar_weights(r=init_range, phi=-0.1)
+        (x0, y0) = polar_weights(r=init_range, phi=phi)
         # (xt, yt) = init_weights(init_range)  #; xt = 0.01 ; yt = -4
 
         p = minimize(
             f=f, grad=grad, xt=x0, yt=y0, optimizer=optimizer,
             lr_policy=lr_policy, lr0=lr0, lr_min=lr_min, rampup=rampup,
-            wd=wd, decoupled_wd=decoupled_wd, grad_noise=grad_noise)
+            wd=wd, decoupled_wd=decoupled_wd, grad_noise=grad_noise, lamb=lamb)
         x = p[:, 0]
         y = p[:, 1]
         loss = p[:, 2]
