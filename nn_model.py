@@ -20,11 +20,14 @@ def f(x, y):
 
 
 def grad(x, y, grad_noise=0):
-    z = 1
+    p = 1
     if grad_noise > 0.:
-        z = random.gauss(mu=1, sigma=grad_noise)
-    dx = 2 * y * (x * y - z)
-    dy = 2 * x * (x * y - z)
+        p = random.gauss(mu=1, sigma=grad_noise)
+        dx = 2 * y * (x * y * p - 1)
+        dy = 2 * x * (x * y * p - 1)
+    else:
+        dx = 2 * y * (x * y - 1)
+        dy = 2 * x * (x * y - 1)
     return (dx, dy)
 
 
@@ -167,7 +170,7 @@ class Novograd_v1(object):
         self.m_y = 0
 
     def name(self):
-        return "Novograd, $L_\inf$ norm"
+        return "NovoGrad, $L_\inf$ norm"
 
     def get_update(self, dx, dy):
         if self.m_x == 0 and self.m_y == 0:
@@ -296,6 +299,8 @@ def show_fun(f):
 
 
 def plot_function():
+
+    plt.figure(figsize=[5.95,6])
     A = 4
     xmin, xmax, xstep = -A, A, .1
     ymin, ymax, ystep = -A, A, .1
@@ -326,7 +331,7 @@ def plot_function():
     plt.plot(x, y, color='green')
     x = -1 + r * np.cos(phi)
     y = -1 + r * np.sin(phi)
-    good, = plt.plot(x, y, color='green', label="flat minimas")
+    good, = plt.plot(x, y, color='green', label="flat minima")
 
     r = 0.2
     phi = np.arange(0, 2*3.141592, 0.1)
@@ -341,11 +346,15 @@ def plot_function():
     plt.plot(x, y, color='red')
     x = -1 / 3 + r * np.cos(phi)
     y = -3. + r * np.sin(phi)
-    bad, = plt.plot(x, y, color='red', label='sharp mininmas')
+    bad, = plt.plot(x, y, color='red', label='sharp minima')
 
-    plt.legend(handles=[solutions, good, bad], bbox_to_anchor=(0.35, 1))
+    plt.legend(handles=[solutions, good, bad], bbox_to_anchor=(0.375, 1))
     plt.grid(True)
-    plt.title("$y=(w_1*w_2-1)^2$ ")
+    plt.title("$y=(w_1 \cdot w_2-1)^2$", fontsize=16)
+
+    plt.axis("equal")
+    plt.xlim((xmin, xmax))
+    plt.ylim((ymin, ymax))
     plt.show()
 
 
@@ -382,7 +391,8 @@ def plot_trajectory(xt, yt, opt_name):
                      color='red', label="path")
 
     plt.grid(True)
-    plt.title("$y=(w_1*w_2-1)^2$ , {}".format(opt_name))
+    plt.title("$y=(w_1 \cdot w_2-1)^2$ , {}".format(opt_name),
+              fontsize=16)
 
     plt.legend(handles=[solutions, path], bbox_to_anchor=(0.35, 1))
 
@@ -458,7 +468,7 @@ def plot_traj_loss(xt, yt, loss, opt_name):
     ax.plot(xt[-1], yt[-1], color='green', marker='*',
             markersize=8, label="end")
     ax.grid(True)
-    ax.set_title("$y=(w_1*w_2-1)^2$ , {}".format(opt_name),
+    ax.set_title("$y=(w_1 \cdot w_2-1)^2$ , {}".format(opt_name),
                  loc='left', fontsize=16)
 
     T = loss.size
@@ -527,7 +537,7 @@ def main():
     lr_min = 0.0
     wd = 0.1
     beta1 = 0.95
-    beta2 = 0.99
+    beta2 = 0.5
     grad_noise = 0.0
     lamb = False
 
