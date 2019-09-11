@@ -1,6 +1,15 @@
-# http://louistiao.me/notes/visualizing-and-animating-optimization-algorithms-with-matplotlib/
-# https://bl.ocks.org/EmilienDupont/aaf429be5705b219aaaf8d691e27ca87
-# https://github.com/EmilienDupont/optimization-rosenbrock
+# -------------------------------------------------------------------
+#  NovoGrad, SGD, Adam / AdamW comparison
+#  minimization of (w1*w2 -1)^2
+#
+#  2019
+#  Boris Ginsburg boris.ginsburg@gmail.com
+#
+#  Apache License: http://www.apache.org/licenses/
+#
+#  See also:
+#  http://louistiao.me/notes/visualizing-and-animating-optimization-algorithms-with-matplotlib/
+#  https://github.com/EmilienDupont/optimization-rosenbrock
 
 import math
 import random
@@ -284,23 +293,10 @@ def show_fun(f):
 
     plt.show()
 
-# fig = plt.figure(figsize=(14,6))
-#
-# # `ax` is a 3D-aware axis instance, because of the projection='3d' keyword
-# ax = fig.add_subplot(1, 2, 1, projection='3d')
-# p = ax.plot_wireframe(x, y, z, rstride=1, cstride=1)
-# #p = ax.plot_surface(x, y, z, rstride=1, cstride=1, linewidth=1)
-# # surface_plot with color grading and color bar
-# ax = fig.add_subplot(1, 2, 2, projection='3d')
-# p = ax.plot_surface(x, y, z, rstride=1, cstride=1,
-#   cmap=plt.cm.coolwarm, linewidth=1, antialiased=False)
-# cb = fig.colorbar(p, shrink=0.5)
-# plt.show()
-
 
 def plot_function():
 
-    plt.figure(figsize=[5.95,6])
+    plt.figure(figsize=[5.95, 6])
     A = 4
     xmin, xmax, xstep = -A, A, .1
     ymin, ymax, ystep = -A, A, .1
@@ -496,7 +492,7 @@ def minimize(
     p = np.zeros((N, 3), dtype=float)
 
     for t in range(0, N - 1):
-        if abs(xt) > 100 or abs(yt) > 100:
+        if abs(xt) > 1000 or abs(yt) > 1000:
             break
         p[t, :] = [xt, yt, f(xt, yt)]
         (dx, dy) = grad(xt, yt, grad_noise)
