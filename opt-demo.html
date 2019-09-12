@@ -98,10 +98,28 @@ circle:hover {
 <table>Weight Decay</table>
 <div>
     <input
-        type="range" min="0.001" max="1" step="0.001" value="0.1" id="WD" data-rangeslider
+        type="range" min="0.000" max="1" step="0.001" value="0.1" id="WD" data-rangeslider
     >
     <output></output>
 </div>
+
+<table>Beta 1</table>
+<div>
+    <input
+        type="range" min="0.000" max="1" step="0.001" value="0.5" id="BETA1" data-rangeslider
+    >
+    <output></output>
+</div>
+
+<table>Beta 2</table>
+<div>
+    <input
+        type="range" min="0.000" max="1" step="0.001" value="0.5" id="BETA2" data-rangeslider
+    >
+    <output></output>
+</div>
+
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://d3js.org/d3-contour.v1.min.js"></script>
 <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
@@ -141,7 +159,7 @@ var width = 500,
     height = 500,
     nx = parseInt(width / 5), // grid sizes
     ny = parseInt(height / 5),
-    drawing_time = 30; // max time to run optimization
+    drawing_time = 50; // max time to run optimization
 
 var svg = d3.select("body")
             .append("svg")
@@ -495,14 +513,16 @@ function minimize(x0,y0) {
 
     var lr0 = document.getElementById("LR").value;
     var wd = document.getElementById("WD").value;
+    var beta1 = document.getElementById("BETA1").value;
+    var beta2 = document.getElementById("BETA2").value;
 
     var lr_policy = "fixed",
         // lr0 = 0.2,
         rampup = 0,
         lr_min = 0.0,
         // wd = 0.1,
-        beta1 = 0.95,
-        beta2 = 0.5,
+        // beta1 = 0.95,
+        // beta2 = 0.5,
         grad_noise = 0.0,
         lamb = false,
         decoupled_wd = false;
