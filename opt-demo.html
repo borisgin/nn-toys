@@ -21,9 +21,6 @@ body {
     margin: 0 auto;
     max-width: 500px;
 }
-<body>
-<h1> Training Linear Network with NovoGrad </h1>
-
 table {
     display: block;
     font-size: 20px;
@@ -90,8 +87,20 @@ circle:hover {
   fill-opacity: .3;
 }
 </style>
+
 <body>
+<h2> Training Linear Network with NovoGrad </h2>
+<p> This is companion demo for
+    "Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep Networks" </p>
+<p> </p>
+<p> We will use 4 optimizers (SGD with momentum, Adam, AdamW and NovoGrda) to train
+    linear netowork composed from 2 layers: y=w_2*w_1_1*x. The network should output 1 when input is 1.
+</p>
+<p> This problem is equivalent to the minimization of function y=(w_2 * w_1 - 1)^2. </p>
+
+<p> </p>
 <table>Learning Rate</table>
+<p> </p>
 <div>
     <input
         type="range" min="0.001" max="1" step="0.001" value="0.2" id="LR" data-rangeslider
@@ -99,6 +108,7 @@ circle:hover {
     <output></output>
 </div>
 <table>Weight Decay</table>
+<p> </p>
 <div>
     <input
         type="range" min="0.000" max="1" step="0.001" value="0.1" id="WD" data-rangeslider
@@ -107,6 +117,7 @@ circle:hover {
 </div>
 
 <table>Beta 1</table>
+<p> </p>
 <div>
     <input
         type="range" min="0.000" max="1" step="0.001" value="0.5" id="BETA1" data-rangeslider
@@ -115,6 +126,7 @@ circle:hover {
 </div>
 
 <table>Beta 2</table>
+<p> </p>
 <div>
     <input
         type="range" min="0.000" max="1" step="0.001" value="0.5" id="BETA2" data-rangeslider
