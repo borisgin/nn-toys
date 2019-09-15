@@ -1,7 +1,8 @@
-<!––
-Vitaly Lavrukhin and Boris Ginsburg
-vitaly.lavrukhin@gmail.com and boris.ginsburg@gmail.com
-
+<!–– Demo for "Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep Networks"
+    by Vitaly Lavrukhin and Boris Ginsburg
+    vitaly.lavrukhin@gmail.com and boris.ginsburg@gmail.com
+-->
+<!--
 The code is based on Emilien Dupont's visualization:
 https://github.com/EmilienDupont/optimization-visualization
 The MIT License (MIT)
@@ -90,20 +91,21 @@ circle:hover {
 
 <body>
 <h2> Training Linear Network with NovoGrad </h2>
-<p> This is the companion demo for
-    "Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep Networks" </p>
+<p style="font-size:85%;"> This is the companion demo for
+    <cite> "Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep Networks" </cite>
+</p>
 <p> </p>
 
 
 <p>
     We will train  network:
-    <math> y = w<sub>2</sub> * w<sub>1</sub> * x </math>.
-    The network is composed from two linear layers, and it should output 1 when input is 1.
-    This is equivalent to the minimization of function
+    <math> y = w<sub>2</sub> * w<sub>1</sub> * x </math> ,
+    composed from two linear layers, to output 1 when input is 1.
+    This is equivalent to the minimization of loss function
     <math>
         y = (w<sub>2</sub>*w<sub>1</sub> - 1)<sup>2</sup>
     </math>.
-    The function is non-convex, with minima located on hypebola
+    The loss  is non-convex, with minima located on hypebola
     <math> w<sub>2</sub> = 1 / w<sub>1</sub> </math>.
     Solutions located near (-1,-1) and (1,1) are good flat minima, which generalize well,
     and solutions near axes are bad "sharp" minima.
@@ -198,8 +200,10 @@ var svg = d3.select("body")
             .attr("height", height);
 
 // Parameters describing where function is defined
-var domain_x = [-4, 4],
-    domain_y = [-4, 4],
+
+var dm_max = 4;
+var domain_x = [-dm_max, dm_max],
+    domain_y = [-dm_max, dm_max],
     domain_f = [0, 2],
     contour_step = 0.1; // Step size of contour plot
 
