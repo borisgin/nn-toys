@@ -28,17 +28,18 @@ def f1(x, y):
     z = t * t
     return z
 
+
 def grad1(x, y, grad_noise=0):
     p = 1
     if grad_noise > 0.:
         p = random.gauss(mu=1, sigma=grad_noise)
-        t = 2 * (x * y * p - 1)
+        t = 2 * p * (x * y * p - 1)
         dx = y * t
         dy = x * t
     else:
-        t = 2 * (x * y  - 1)
-        dx =  y * t
-        dy =  x * t
+        t = 2 * (x * y - 1)
+        dx = y * t
+        dy = x * t
     return (dx, dy)
 
 
@@ -52,30 +53,42 @@ def f2(x, y):
 
 
 def grad2(x, y, grad_noise=0):
-    p = 1
     if grad_noise > 0.:
         p = random.gauss(mu=1, sigma=grad_noise)
-        t = 2 * (x * y * p - c)
-        dx = y * t
-        dy = x * t
     else:
-        w = x * y
-        t1  = w - 1
-        z1 = t1 * t1
-        t2 = w + 1
-        z2 = t2 * t2
-        if z1 < z2:
-            c = 1
-        else:
-            c = -1
-        t = 2 * (w - c)
-        dx = y * t
-        dy = x * t
+        p = 1
+    w = x * y * p
+    t1 = w - 1
+    z1 = t1 * t1
+    t2 = w + 1
+    z2 = t2 * t2
+    if z1 < z2:
+        c = 1
+    else:
+        c = -1
+    t = 2 * p * (w - c)
+    dx = y * t
+    dy = x * t
     return (dx, dy)
 
-(f, grad, clist ) = (f1, grad1, [1])
+    # else:
+    #     w = x * y
+    #     t1 = w - 1
+    #     z1 = t1 * t1
+    #     t2 = w + 1
+    #     z2 = t2 * t2
+    #     if z1 < z2:
+    #         c = 1
+    #     else:
+    #         c = -1
+    #     t = 2 * (w - c)
+    #     dx = y * t
+    #     dy = x * t
+    return (dx, dy)
 
-# (f, grad, clist) = (f2, grad2, [-1, 1])
+# (f, grad, clist) = (f1, grad1, [1])
+
+(f, grad, clist) = (f2, grad2, [-1, 1])
 
 
 def polar_weights(r, phi=None):
@@ -275,7 +288,6 @@ def show_heatmap(f, xt, yt):
         t = np.clip(t, -A, A)
         plt.plot(s, t, color='yellow', linestyle='dashed')
 
-
     im = plt.imshow(z, cmap=plt.cm.jet, extent=(-A, A, -A, A),
                     origin='lower', interpolation='bilinear')
     fig.colorbar(im)
@@ -430,9 +442,7 @@ def plot_trajectory(xt, yt, opt_name):
     plt.grid(True)
     plt.title("$y=(w_1 \cdot w_2-1)^2$ , {}".format(opt_name),
               fontsize=16)
-
     plt.legend(handles=[solutions, path], bbox_to_anchor=(0.35, 1))
-
     plt.show()
 
 
@@ -466,7 +476,7 @@ def plot_traj_loss(xt, yt, loss, opt_name):
         t = c / s
         #  ax.plot(s, t, color='black', linestyle='dashed')
         solutions, = ax.plot(s, t, color='black',
-                         linestyle='dashed', label="global solutions")
+                             linestyle='dashed', label="global solutions")
 
     # ----------plot trajectory------------------------------------------------
 
@@ -480,8 +490,8 @@ def plot_traj_loss(xt, yt, loss, opt_name):
                    markersize=8, label="end")
     ax.legend(handles=[solutions, path, start, end], bbox_to_anchor=(0.4, 1))
     ax.grid(True)
-    if f==f1:
-        title ="$y=(w_1 \cdot w_2-1)^2$ "
+    if f == f1:
+        title = "$y=(w_1 \cdot w_2-1)^2$"
     else:
         title = "$y= \min ((w_1 \cdot w_2-1)^2,(w_1 \cdot w_2+1)^2)$"
     title = "             " + title + " , " + opt_name
@@ -596,11 +606,11 @@ def main():
     wd = 0.1
     beta1 = 0.95
     beta2 = 0.5
-    grad_noise = 0.0
+    grad_noise = 0.01
     lamb = False
 
     init_range = 1.1415
-    phi = 0.000001  #3.1415 / 2.
+    phi = 0.000001  # 3.1415 / 2.
 
     optimizers = []
     optimizers.append((SGD(beta1=beta1), False))
