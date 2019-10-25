@@ -23,21 +23,59 @@ from matplotlib import animation
 from IPython.display import HTML
 
 
-def f(x, y):
-    z = (x*y-1)*(x*y-1)
+def f1(x, y):
+    t = x * y - 1
+    z = t * t
     return z
 
-
-def grad(x, y, grad_noise=0):
+def grad1(x, y, grad_noise=0):
     p = 1
     if grad_noise > 0.:
         p = random.gauss(mu=1, sigma=grad_noise)
-        dx = 2 * y * (x * y * p - 1)
-        dy = 2 * x * (x * y * p - 1)
+        t = 2 * (x * y * p - 1)
+        dx = y * t
+        dy = x * t
     else:
-        dx = 2 * y * (x * y - 1)
-        dy = 2 * x * (x * y - 1)
+        t = 2 * (x * y  - 1)
+        dx =  y * t
+        dy =  x * t
     return (dx, dy)
+
+
+def f2(x, y):
+    t1 = x * y - 1
+    z1 = t1 * t1
+    t2 = x * y + 1
+    z2 = t2 * t2
+    z = np.minimum(z1, z2)
+    return z
+
+
+def grad2(x, y, grad_noise=0):
+    p = 1
+    if grad_noise > 0.:
+        p = random.gauss(mu=1, sigma=grad_noise)
+        t = 2 * (x * y * p - c)
+        dx = y * t
+        dy = x * t
+    else:
+        w = x * y
+        t1  = w - 1
+        z1 = t1 * t1
+        t2 = w + 1
+        z2 = t2 * t2
+        if z1 < z2:
+            c = 1
+        else:
+            c = -1
+        t = 2 * (w - c)
+        dx = y * t
+        dy = x * t
+    return (dx, dy)
+
+(f, grad, clist ) = (f1, grad1, [1])
+
+# (f, grad, clist) = (f2, grad2, [-1, 1])
 
 
 def polar_weights(r, phi=None):
@@ -226,14 +264,17 @@ def show_heatmap(f, xt, yt):
     z_min, z_max = -np.abs(z).max(), np.abs(z).max()
 
     fig, ax = plt.subplots(figsize=(10, 10))
-    s = np.arange(xmin, - xstep, xstep)
-    t = 1 / s
-    t = np.clip(t, -A, A)
-    plt.plot(s, t, color='yellow', linestyle='dashed')
-    s = np.arange(xstep, xmax + xstep, xstep)
-    t = 1 / s
-    t = np.clip(t, -A, A)
-    plt.plot(s, t, color='yellow', linestyle='dashed')
+
+    for c in clist:
+        s = np.arange(xmin, - xstep, xstep)
+        t = c / s
+        t = np.clip(t, -A, A)
+        plt.plot(s, t, color='yellow', linestyle='dashed')
+        s = np.arange(xstep, xmax + xstep, xstep)
+        t = c / s
+        t = np.clip(t, -A, A)
+        plt.plot(s, t, color='yellow', linestyle='dashed')
+
 
     im = plt.imshow(z, cmap=plt.cm.jet, extent=(-A, A, -A, A),
                     origin='lower', interpolation='bilinear')
@@ -396,6 +437,7 @@ def plot_trajectory(xt, yt, opt_name):
 
 
 def plot_traj_loss(xt, yt, loss, opt_name):
+    # clist = [1]
 
     # fig, ax = plt.subplots(figsize=(10, 10))
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
@@ -414,14 +456,19 @@ def plot_traj_loss(xt, yt, loss, opt_name):
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
 
+    # ------ plot global solutions ------------------------------------
     s = np.arange(xmin, - xstep, xstep)
-    t = 1 / s
-    ax.plot(s, t, color='black', linestyle='dashed')
+    for c in clist:
+        t = c / s
+        ax.plot(s, t, color='black', linestyle='dashed')
     s = np.arange(xstep, xmax + xstep, xstep)
-    t = 1 / s
-    ax.plot(s, t, color='black', linestyle='dashed')
-    solutions, = ax.plot(s, t, color='black',
+    for c in clist:
+        t = c / s
+        #  ax.plot(s, t, color='black', linestyle='dashed')
+        solutions, = ax.plot(s, t, color='black',
                          linestyle='dashed', label="global solutions")
+
+    # ----------plot trajectory------------------------------------------------
 
     ax.quiver(xt[:-1], yt[:-1], xt[1:] - xt[:-1], yt[1:] - yt[:-1],
               color='red', angles='xy', scale_units='xy', scale=1)
@@ -433,14 +480,28 @@ def plot_traj_loss(xt, yt, loss, opt_name):
                    markersize=8, label="end")
     ax.legend(handles=[solutions, path, start, end], bbox_to_anchor=(0.4, 1))
     ax.grid(True)
+    if f==f1:
+        title ="$y=(w_1 \cdot w_2-1)^2$ "
+    else:
+        title = "$y= \min ((w_1 \cdot w_2-1)^2,(w_1 \cdot w_2+1)^2)$"
+    title = "             " + title + " , " + opt_name
+    ax.set_title(title, loc='left', fontsize=16)
 
+    # ------ plot end  point  ------------------------------------
     ASTEP = 0.25
-    AMIN = 1 - ASTEP
-    AMAX = 1 + ASTEP
+    # AMIN = 1 - ASTEP
+    # AMAX = 1 + ASTEP
+    X0 = math.copysign(1, xt[-1])
+    Y0 = math.copysign(1, yt[-1])
+    C0 = X0 * Y0
+    # print(X0, Y0)
+    XMIN = X0 - ASTEP
+    XMAX = X0 + ASTEP
+    YMIN = Y0 - ASTEP
+    YMAX = Y0 + ASTEP
     ax = ax2
-    xmin, xmax, xstep = AMIN, AMAX, .1
-    ymin, ymax, ystep = AMIN, AMAX, .1
-
+    xmin, xmax, xstep = XMIN, XMAX, .1
+    ymin, ymax, ystep = YMIN, YMAX, .1
     x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep),
                        np.arange(ymin, ymax + ystep, ystep))
     z = f(x, y)
@@ -451,8 +512,9 @@ def plot_traj_loss(xt, yt, loss, opt_name):
     ax.set_xlim((xmin, xmax))
     ax.set_ylim((ymin, ymax))
 
-    s = np.arange(xstep, xmax + xstep, xstep)
-    t = 1 / s
+    s = np.arange(xmin, xmax + xstep, xstep)
+    # t = 1 / s
+    t = C0 / s
     ax.plot(s, t, color='black', linestyle='dashed')
     ax.plot(s, t, color='black',
             linestyle='dashed', label="global solutions")
@@ -464,9 +526,9 @@ def plot_traj_loss(xt, yt, loss, opt_name):
     ax.plot(xt[-1], yt[-1], color='green', marker='*',
             markersize=8, label="end")
     ax.grid(True)
-    ax.set_title("$y=(w_1 \cdot w_2-1)^2$ , {}".format(opt_name),
-                 loc='left', fontsize=16)
+    # ax.set_title(opt_name, loc='left', fontsize=16)
 
+    # ------ plot loss  ------------------------------------
     T = loss.size
     max_loss = np.nanmax(loss)
     t = np.arange(0, T, 1)
@@ -537,8 +599,8 @@ def main():
     grad_noise = 0.0
     lamb = False
 
-    init_range = 0.5
-    phi = -0.1
+    init_range = 1.1415
+    phi = 0.000001  #3.1415 / 2.
 
     optimizers = []
     optimizers.append((SGD(beta1=beta1), False))
