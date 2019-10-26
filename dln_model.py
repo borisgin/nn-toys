@@ -30,16 +30,10 @@ def f1(x, y):
 
 
 def grad1(x, y, grad_noise=0):
-    p = 1
-    if grad_noise > 0.:
-        p = random.gauss(mu=1, sigma=grad_noise)
-        t = 2 * p * (x * y * p - 1)
-        dx = y * t
-        dy = x * t
-    else:
-        t = 2 * (x * y - 1)
-        dx = y * t
-        dy = x * t
+    p = random.gauss(mu=1, sigma=grad_noise) if grad_noise > 0. else 1
+    t = 2 * (x * y - p)
+    dx = y * t
+    dy = x * t
     return (dx, dy)
 
 
@@ -53,41 +47,21 @@ def f2(x, y):
 
 
 def grad2(x, y, grad_noise=0):
-    if grad_noise > 0.:
-        p = random.gauss(mu=1, sigma=grad_noise)
-    else:
-        p = 1
-    w = x * y * p
-    t1 = w - 1
+    p = random.gauss(mu=1, sigma=grad_noise) if grad_noise > 0. else 1
+    w = x * y
+    t1 = w - p
     z1 = t1 * t1
-    t2 = w + 1
+    t2 = w + p
     z2 = t2 * t2
     if z1 < z2:
-        c = 1
+        t = 2 * (w - p)
     else:
-        c = -1
-    t = 2 * p * (w - c)
+        t = 2 * (w + p)
     dx = y * t
     dy = x * t
     return (dx, dy)
 
-    # else:
-    #     w = x * y
-    #     t1 = w - 1
-    #     z1 = t1 * t1
-    #     t2 = w + 1
-    #     z2 = t2 * t2
-    #     if z1 < z2:
-    #         c = 1
-    #     else:
-    #         c = -1
-    #     t = 2 * (w - c)
-    #     dx = y * t
-    #     dy = x * t
-    return (dx, dy)
-
 # (f, grad, clist) = (f1, grad1, [1])
-
 (f, grad, clist) = (f2, grad2, [-1, 1])
 
 
