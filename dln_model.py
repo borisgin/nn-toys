@@ -61,8 +61,8 @@ def grad2(x, y, grad_noise=0):
     dy = x * t
     return (dx, dy)
 
-# (f, grad, clist) = (f1, grad1, [1])
-(f, grad, clist) = (f2, grad2, [-1, 1])
+(f, grad, clist) = (f1, grad1, [1])
+# (f, grad, clist) = (f2, grad2, [-1, 1])
 
 
 def polar_weights(r, phi=None):
@@ -150,8 +150,9 @@ class Adam(object):
             self.v_y = self.beta2 * self.v_y + (1 - self.beta2) * dy * dy
             self.m_x = self.beta1 * self.m_x + (1 - self.beta1) * dx
             self.m_y = self.beta1 * self.m_y + (1 - self.beta1) * dy
-        ux = self.m_x / math.sqrt(self.v_x)
-        uy = self.m_y / math.sqrt(self.v_y)
+
+        ux = self.m_x / math.sqrt(self.v_x) if self.v_x > 0 else self.m_x
+        uy = self.m_y / math.sqrt(self.v_y) if self.v_y > 0 else self.m_y
         return (ux, uy)
 
 
@@ -534,7 +535,7 @@ def minimize(
         grad_noise=0,
         lamb=False):
 
-    N = 500
+    N = 1000
     p = np.zeros((N, 3), dtype=float)
 
     for t in range(0, N - 1):
@@ -574,23 +575,24 @@ def main():
     # plot_function()
 
     lr_policy = 'fixed'
-    lr0 = 0.2  # 0.1
+    lr0 = 0.1  # 0.1
     rampup = 0
     lr_min = 0.0
     wd = 0.1
     beta1 = 0.95
     beta2 = 0.5
-    grad_noise = 0.01
+    grad_noise = 0  # 0.01
     lamb = False
 
-    init_range = 1.1415
-    phi = 0.000001  # 3.1415 / 2.
+    init_range = 0.1
+    phi = 0.000001
 
     optimizers = []
     optimizers.append((SGD(beta1=beta1), False))
     optimizers.append((Adam(beta1=beta1, beta2=beta2), False))
     optimizers.append((Adam(beta1=beta1, beta2=beta2), True))
     # optimizers.append((Novograd_v1(beta1=beta1, beta2=beta2), True))
+    optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
     optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
 
     for optimizer, decoupled_wd in optimizers:
@@ -600,6 +602,7 @@ def main():
 
         (x0, y0) = polar_weights(r=init_range, phi=phi)
         # (xt, yt) = init_weights(init_range)  #; xt = 0.01 ; yt = -4
+        # (x0, y0) = (0.000000001, 0.000000001)
 
         p = minimize(
             f=f, grad=grad, xt=x0, yt=y0, optimizer=optimizer,
