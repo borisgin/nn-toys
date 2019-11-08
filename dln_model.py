@@ -421,12 +421,14 @@ def plot_trajectory(xt, yt, opt_name):
     plt.show()
 
 
-def plot_traj_loss(xt, yt, loss, opt_name):
+def plot_traj_loss(xt, yt, loss, opt_name, plot_end_point=True):
     # clist = [1]
 
     # fig, ax = plt.subplots(figsize=(10, 10))
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
-
+    if plot_end_point:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
+    else:
+        fig, (ax1,  ax3) = plt.subplots(1, 2, figsize=(18, 6))
     A = 4
     ax = ax1
     xmin, xmax, xstep = -A, A, .1
@@ -472,46 +474,47 @@ def plot_traj_loss(xt, yt, loss, opt_name):
     title = "             " + title + " , " + opt_name
     ax.set_title(title, loc='left', fontsize=16)
 
-    # ------ plot end  point  ------------------------------------
-    ASTEP = 0.25
-    # AMIN = 1 - ASTEP
-    # AMAX = 1 + ASTEP
-    X0 = math.copysign(1, xt[-1])
-    Y0 = math.copysign(1, yt[-1])
-    C0 = X0 * Y0
-    # print(X0, Y0)
-    XMIN = X0 - ASTEP
-    XMAX = X0 + ASTEP
-    YMIN = Y0 - ASTEP
-    YMAX = Y0 + ASTEP
-    ax = ax2
-    xmin, xmax, xstep = XMIN, XMAX, .1
-    ymin, ymax, ystep = YMIN, YMAX, .1
-    x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep),
-                       np.arange(ymin, ymax + ystep, ystep))
-    z = f(x, y)
-    # ax = plt.axes()
-    ax.contour(x, y, z, levels=np.arange(0, 2, 0.33), cmap=plt.cm.jet)
-    ax.set_xlabel('$w_1$')
-    ax.set_ylabel('$w_2$')
-    ax.set_xlim((xmin, xmax))
-    ax.set_ylim((ymin, ymax))
+    if plot_end_point:
+        # ------ plot end  point  ------------------------------------
+        ASTEP = 0.25
+        # AMIN = 1 - ASTEP
+        # AMAX = 1 + ASTEP
+        X0 = math.copysign(1, xt[-1])
+        Y0 = math.copysign(1, yt[-1])
+        C0 = X0 * Y0
+        # print(X0, Y0)
+        XMIN = X0 - ASTEP
+        XMAX = X0 + ASTEP
+        YMIN = Y0 - ASTEP
+        YMAX = Y0 + ASTEP
+        ax = ax2
+        xmin, xmax, xstep = XMIN, XMAX, .1
+        ymin, ymax, ystep = YMIN, YMAX, .1
+        x, y = np.meshgrid(np.arange(xmin, xmax + xstep, xstep),
+                           np.arange(ymin, ymax + ystep, ystep))
+        z = f(x, y)
+        # ax = plt.axes()
+        ax.contour(x, y, z, levels=np.arange(0, 2, 0.33), cmap=plt.cm.jet)
+        ax.set_xlabel('$w_1$')
+        ax.set_ylabel('$w_2$')
+        ax.set_xlim((xmin, xmax))
+        ax.set_ylim((ymin, ymax))
 
-    s = np.arange(xmin, xmax + xstep, xstep)
-    # t = 1 / s
-    t = C0 / s
-    ax.plot(s, t, color='black', linestyle='dashed')
-    ax.plot(s, t, color='black',
-            linestyle='dashed', label="global solutions")
+        s = np.arange(xmin, xmax + xstep, xstep)
+        # t = 1 / s
+        t = C0 / s
+        ax.plot(s, t, color='black', linestyle='dashed')
+        ax.plot(s, t, color='black',
+                linestyle='dashed', label="global solutions")
 
-    ax.quiver(xt[:-1], yt[:-1], xt[1:] - xt[:-1], yt[1:] - yt[:-1],
-              color='red', angles='xy', scale_units='xy', scale=1)
+        ax.quiver(xt[:-1], yt[:-1], xt[1:] - xt[:-1], yt[1:] - yt[:-1],
+                  color='red', angles='xy', scale_units='xy', scale=1)
 
-    ax.plot(xt[-1], yt[-1], color='red', label="path")
-    ax.plot(xt[-1], yt[-1], color='green', marker='*',
-            markersize=8, label="end")
-    ax.grid(True)
-    # ax.set_title(opt_name, loc='left', fontsize=16)
+        ax.plot(xt[-1], yt[-1], color='red', label="path")
+        ax.plot(xt[-1], yt[-1], color='green', marker='*',
+                markersize=8, label="end")
+        ax.grid(True)
+        # ax.set_title(opt_name, loc='left', fontsize=16)
 
     # ------ plot loss  ------------------------------------
     T = loss.size
@@ -575,25 +578,25 @@ def main():
     # plot_function()
 
     lr_policy = 'fixed'
-    lr0 = 0.1  # 0.1
+    lr0 = 0.1
     rampup = 0
     lr_min = 0.0
-    wd = 0.1
+    wd = 0.01
     beta1 = 0.95
     beta2 = 0.5
     grad_noise = 0  # 0.01
     lamb = False
 
-    init_range = 0.1
-    phi = 0.000001
+    init_range = 0.5
+    phi = 0.3
 
     optimizers = []
     optimizers.append((SGD(beta1=beta1), False))
-    optimizers.append((Adam(beta1=beta1, beta2=beta2), False))
+    optimizers.append((Adam(beta1=beta1, beta2=0.99), False))
     optimizers.append((Adam(beta1=beta1, beta2=beta2), True))
     # optimizers.append((Novograd_v1(beta1=beta1, beta2=beta2), True))
-    optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
-    optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
+    optimizers.append((Novograd(beta1=beta1, beta2=0.5), True))
+    # optimizers.append((Novograd(beta1=beta1, beta2=beta2), True))
 
     for optimizer, decoupled_wd in optimizers:
         opt_name = optimizer.name()
@@ -602,7 +605,7 @@ def main():
 
         (x0, y0) = polar_weights(r=init_range, phi=phi)
         # (xt, yt) = init_weights(init_range)  #; xt = 0.01 ; yt = -4
-        # (x0, y0) = (0.000000001, 0.000000001)
+        # (x0, y0) = (0.01, 0.01)
 
         p = minimize(
             f=f, grad=grad, xt=x0, yt=y0, optimizer=optimizer,
@@ -613,7 +616,8 @@ def main():
         loss = p[:, 2]
 
         print("Last point: ({}, {}), L={}".format(x[-1], y[-1], loss[-1]))
-        plot_traj_loss(x, y, loss, opt_name)
+        plot_traj_loss(x, y, loss, opt_name, plot_end_point=True)
+
         # show_heatmap(f, x, y)
         # plot_loss(loss)
 
