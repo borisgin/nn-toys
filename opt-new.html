@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rangeslider.js/2.3.2/rangeslider.min.css">
+
+<style>
+html {
+    color: #404040;
+    font-family: Helvetica, arial, sans-serif;
+}
+/*
+body {
+    padding: 50px 20px;
+    margin: 0 auto;
+    max-width: 500px;
+}
+
+table {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0px;
+    padding: 0 20px;
+    width: 100%;
+}
+
+output {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    margin: 20px 0;
+    width: 100%;
+}
+
+.u-left {
+    float: left;
+}
+.u-cf:before,
+.u-cf:after {
+    content: "";
+    display: table;
+}
+.u-cf:after {
+    clear: both;
+}
+.u-text-left {
+    text-align: left;
+}
+*/
+
+.sgd {
+    stroke: blue;
+}
+
+.adam {
+    stroke: red;
+}
+
+.adamw {
+    stroke: yellow;
+}
+
+.novograd {
+    stroke: green;
+}
+
+.SGD {
+    fill: blue;
+}
+
+.Adam {
+    fill: red;
+}
+
+.AdamW {
+    fill: yellow;
+}
+
+.NovoGrad {
+    fill: green;
+}
+
+circle:hover {
+  fill-opacity: .3;
+}
+</style>
+<body>
+<h2 style="text-align: center">Optimizers Demo</h2>
+<table style="width:100%" border="1" >
+<tr>
+    <td style="width:40%">
+        <div id="plot"></div>
+    </td>
+    <td align="center">
+
+
+    <table style="width:80%; text-align:center" border="1">
+        <tr>General Parameters</tr>
+        <tr>
+        <td style="width:10%">Number of steps</td>
+        <td style="width:80%">
+            <input type="range" min="10" max="1000" step="10" value="500" id="N_steps" data-rangeslider>
+        </td>
+        <td><output></output></td>
+        </tr>
+    </table>
+
+
+    <table style="width:80%; text-align:center" border="1">
+        <tr>SGD Parameters</tr>
+        <tr>
+        <td style="width:10%">LR</td>
+        <td style="width:80%">
+            <input type="range" min="0.001" max="1" step="0.001" value="0.2" id="SGD-LR" data-rangeslider>
+        </td>
+        <td><output></output></td>
+        </tr>
+        <tr> </tr>
+        <tr>
+        <td style="width:10%">WD</td>
+        <td style="width:80%">
+            <input type="range" min="0.001" max="1" step="0.001" value="0.1" id="SGD-WD" data-rangeslider>
+        </td>
+        <td><output></output></td>
+        </tr>
+        <tr> </tr>
+        <tr>
+        <td style="width:10%">Momentum</td>
+        <td style="width:80%">
+            <input type="range" min="0" max="1" step="0.01" value="0.95" id="SGD-M" data-rangeslider>
+        </td>
+        <td><output></output></td>
+        </tr>
+    </table>
+                
+    <table style="width:80%; text-align:center" border="1">
+    <tr>Adam Parameters</tr>
+    <tr>
+    <td style="width:10%">LR</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.2" id="Adam-LR" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">WD</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.1" id="Adam-WD" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">Beta1</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.9" id="Adam-Beta1" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">Beta2</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.999" id="Adam-Beta2" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    </table>
+
+    <table style="width:80%; text-align:center" border="1">
+    <tr>NovoGrad Parameters</tr>
+    <tr>
+    <td style="width:10%">LR</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.2" id="LR" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">WD</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.1" id="WD" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">Beta1</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.95" id="Beta1" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    <tr> </tr>
+    <tr>
+    <td style="width:10%">Beta2</td>
+    <td style="width:80%">
+        <input type="range" min="0.001" max="1" step="0.001" value="0.5" id="Beta2" data-rangeslider>
+    </td>
+    <td><output></output></td>
+    </tr>
+    </table>
+
+
+
+    </td>
+</tr>
+</table> 
+
+    
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-contour.v1.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/rangeslider.js/2.3.2/rangeslider.min.js"></script>
+<script>
+
+$(function() {
+        var $document = $(document);
+        var selector = '[data-rangeslider]';
+        var $element = $(selector);
+        // For ie8 support
+        var textContent = ('textContent' in document) ? 'textContent' : 'innerText';
+        // Example functionality to demonstrate a value feedback
+        function valueOutput(element) {
+            var value = element.value;
+            var output = element.parentNode.getElementsByTagName('output')[0] || element.parentNode.parentNode.getElementsByTagName('output')[0];
+            output[textContent] = value;
+        }
+        $document.on('input', 'input[type="range"], ' + selector, function(e) {
+            valueOutput(e.target);
+        });
+        // Basic rangeslider initialization
+        $element.rangeslider({
+            // Deactivate the feature detection
+            polyfill: false,
+            // Callback function
+            onInit: function() {
+                valueOutput(this.$element[0]);
+            },
+            
+        });
+    });
+
+    
+
+var width = document.getElementById("plot").clientWidth,
+    height = document.getElementById("plot").clientWidth,
+    nx = parseInt(width / 2), // grid sizes
+    ny = parseInt(height / 2),
+    drawing_time = 10; // max time to run optimization
+
+var svg = d3.select("#plot")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+// Parameters describing where function is defined
+var domain_x = [-4, 4],
+    domain_y = [-4, 4],
+    domain_f = [0, 2],
+    contour_step = 0.1; // Step size of contour plot
+
+var scale_x = d3.scaleLinear()
+                .domain([0, width])
+                .range(domain_x);
+
+var scale_y = d3.scaleLinear()
+                .domain([0, height])
+                .range([domain_y[1], domain_y[0], -1]);
+
+// var thresholds = d3.range(domain_f[0], domain_f[1], contour_step);
+var thresholds = d3.range(0, domain_x[1], contour_step).map(x => (x*x-1)*(x*x-1));
+// var thresholds = [0, 0.02, 0.05, 0.1, 0.4, 1.0, 2.0, 5, 20, 100, 200];
+
+var color_scale = d3.scalePow()
+    .exponent(0.2)
+    .domain(d3.extent(thresholds))
+    .interpolate(function() { return d3.interpolateGreys; }); // interpolateRgb("gray", "white"); });
+
+var function_g = svg.append("g").on("mousedown", mousedown),
+    gradient_path_g = svg.append("g"),
+    menu_g = svg.append("g");
+
+/*
+ * Set up the function and gradients
+ */
+
+/* Value of f at (x, y) */
+function f(x, y) {
+    return (x*y-1)*(x*y-1);
+}
+
+/* Returns gradient of f at (x, y) */
+function grad_f(x,y) {
+    var grad_x = 2*(x*y-1)*y,
+        grad_y = 2*(x*y-1)*x;
+    return [grad_x, grad_y];
+}
+
+
+/* Returns values of f(x,y) at each point on grid as 1 dim array. */
+function get_f_values(nx, ny) {
+    var grid = new Array(nx * ny);
+    for (i = 0; i < nx; i++) {
+        for (j = 0; j < ny; j++) {
+            var x = scale_x( parseFloat(i) / nx * width ),
+                y = scale_y( parseFloat(j) / ny * height );
+            // Set value at ordering expected by d3.contour
+            grid[i + j * nx] = f(x, y);
+        }
+    }
+    return grid;
+}
+
+/*
+ * Set up the contour plot
+ */
+
+var contours = d3.contours()
+    .size([nx, ny])
+    .thresholds(thresholds);
+
+var f_values = get_f_values(nx, ny);
+
+function_g.selectAll("path")
+          .data(contours(f_values))
+          .enter().append("path")
+          .attr("d", d3.geoPath(d3.geoIdentity().scale(width / nx)))
+          .attr("fill", function(d) { return color_scale(d.value); });
+          // .attr("stroke", "none");
+
+/*
+ * Set up buttons
+ */
+var draw_bool = {"SGD" : true, "Adam" : true, "AdamW" : true, "NovoGrad" : true};
+
+var buttons = ["SGD", "Adam", "AdamW", "NovoGrad"];
+
+menu_g.append("rect")
+      .attr("x", 0)
+      .attr("y", height - 40)
+      .attr("width", width)
+      .attr("height", 40)
+      .attr("fill", "white")
+      .attr("opacity", 0.2);
+
+menu_g.selectAll("circle")
+      .data(buttons)
+      .enter()
+      .append("circle")
+      .attr("cx", function(d,i) { return width/4 * (i + 0.25);} )
+      .attr("cy", height - 20)
+      .attr("r", 10)
+      .attr("stroke-width", 0.5)
+      .attr("stroke", "black")
+      .attr("class", function(d) { console.log(d); return d;})
+      .attr("fill-opacity", 0.5)
+      .attr("stroke-opacity", 1)
+      .on("mousedown", button_press);
+
+menu_g.selectAll("text")
+      .data(buttons)
+      .enter()
+      .append("text")
+      .attr("x", function(d,i) { return width/4 * (i + 0.25) + 18;} )
+      .attr("y", height - 14)
+      .text(function(d) { return d; })
+      .attr("text-anchor", "start")
+      .attr("font-family", "Helvetica Neue")
+      .attr("font-size", 15)
+      .attr("font-weight", 200)
+      .attr("fill", "white")
+      .attr("fill-opacity", 0.8);
+
+function button_press() {
+    var type = d3.select(this).attr("class")
+    if (draw_bool[type]) {
+        d3.select(this).attr("fill-opacity", 0);
+        draw_bool[type] = false;
+    } else {
+        d3.select(this).attr("fill-opacity", 0.5)
+        draw_bool[type] = true;
+    }
+}
+
+/*
+ * Set up optimization/gradient descent functions.
+ * SGD, Momentum, RMSProp, Adam.
+ */
+
+function SGD(beta1=0.95, grad_averaging=true) {
+    this.beta1 = beta1;
+    this.grad_averaging = grad_averaging;
+    this.m_x = 0;
+    this.m_y = 0;
+    this.name = "sgd";
+    this.get_update = function (dx, dy) {
+        if (this.m_x == 0 && this.m_y == 0) {
+            this.m_x = dx;
+            this.m_y = dy;
+        } else {
+            if (this.grad_averaging) {
+                this.m_x = this.beta1*this.m_x + (1-this.beta1)*dx;
+                this.m_y = this.beta1*this.m_y + (1-this.beta1)*dy;
+            } else {
+                this.m_x = this.beta1*this.m_x + dx;
+                this.m_y = this.beta1*this.m_y + dy;
+            }
+        }
+        return [this.m_x, this.m_y];
+    }
+}
+
+function Adam(beta1=0.95, beta2=0.99) {
+    this.beta1 = beta1;
+    this.beta2 = beta2;
+    this.v_x = 0;
+    this.v_y = 0;
+    this.m_x = 0;
+    this.m_y = 0;
+    this.name = "adam";
+    this.get_update = function (dx, dy) {
+        if (this.m_x == 0 && this.m_y == 0) {
+            this.v_x = dx * dx;
+            this.v_y = dy * dy;
+            this.m_x = dx;
+            this.m_y = dy;
+        } else {
+            this.v_x = this.beta2*this.v_x + (1-this.beta2)*dx*dx;
+            this.v_y = this.beta2*this.v_y + (1-this.beta2)*dy*dy;
+            this.m_x = this.beta1*this.m_x + (1-this.beta1)*dx;
+            this.m_y = this.beta1*this.m_y + (1-this.beta1)*dy;
+       }
+       ux = this.m_x / Math.sqrt(this.v_x);
+       uy = this.m_y / Math.sqrt(this.v_y);
+       return [ux, uy];
+    }
+}
+
+function NovoGrad(beta1=0.95, beta2=0.99, grad_averaging=true) {
+    this.beta1 = beta1;
+    this.beta2 = beta2;
+    this.grad_averaging = grad_averaging;
+    this.v_x = 0;
+    this.v_y = 0;
+    this.m_x = 0;
+    this.m_y = 0;
+    this.name = "novograd";
+    this.get_update = function (dx, dy) {
+        if (this.m_x == 0 && this.m_y == 0) {
+            this.v_x = dx * dx;
+            this.v_y = dy * dy;
+            this.m_x = dx;
+            this.m_y = dy;
+        } else {
+            this.v_x = this.beta2*this.v_x + (1-this.beta2)*dx*dx;
+            this.v_y = this.beta2*this.v_y + (1-this.beta2)*dy*dy;
+            if (this.grad_averaging) {
+                this.m_x = this.beta1*this.m_x + (1-this.beta1)*dx/Math.sqrt(this.v_x)
+                this.m_y = this.beta1*this.m_y + (1-this.beta1)*dy/Math.sqrt(this.v_y)
+            } else {
+                this.m_x = this.beta1*this.m_x + dx/Math.sqrt(this.v_x);
+                this.m_y = this.beta1*this.m_y + dy/Math.sqrt(this.v_y);
+            }
+       }
+       ux = this.m_x;
+       uy = this.m_y;
+       return [ux, uy];
+    }
+}
+
+function learning_rate(lr0, lr_policy, t, steps,
+                       lr_min=0, rampup=0) {
+    if (rampup>0 && t<rampup) {
+        lr = lr0 * t / rampup;
+    } else {
+        r = 1 - (t - rampup) / (steps - rampup)
+        if (lr_policy == "poly") {
+            lr = lr0 * r * r;
+        } else if (lr_policy == "cosine") {
+            lr = lr0 * Math.cos(Math.PI * r + 1) / 2;
+        } else if (lr_policy == "fixed") {
+            lr = lr0;
+        }
+    }
+    lr = Math.max(Math.abs(lr), lr_min);
+    return lr;
+}
+
+function optimize(f, grad,
+                  xt, yt,
+                  optimizer,
+                  lr_policy, lr0, lr_min, rampup,
+                  wd, decoupled_wd,
+                  grad_noise=0,
+                  lamb=False, N=500) {
+    var history = [];
+    history.push({"x" : scale_x.invert(xt), "y" : scale_y.invert(yt)});
+    for (t=0; t<N; t++) {
+        if (Math.abs(xt) > 1e8 || Math.abs(yt) > 1e8)
+            break;
+        var [dx, dy] = grad_f(xt, yt);
+        if (wd>0 && !decoupled_wd) {
+            dx += wd * xt;
+            dy += wd * yt;
+        }
+        [ux, uy] = optimizer.get_update(dx, dy);
+
+        if (wd>0 && decoupled_wd) {
+            ux += wd * xt;
+            uy += wd * yt;
+        }
+        if (lamb) {
+            u_norm = Math.sqrt(ux*ux + uy*uy);
+            w_norm = Math.sqrt(xt*xt + yt*yt);
+            k = w_norm / u_norm;
+            ux = ux * k;
+            uy = uy * k;
+        }
+        lr = learning_rate(lr0, lr_policy, t, N, rampup, 0);
+        xt -= lr * ux;
+        yt -= lr * uy;
+        history.push({"x" : scale_x.invert(xt), "y" : scale_y.invert(yt)});
+    }
+    return history;
+}
+
+
+/*
+ * Functions necessary for path visualizations
+ */
+
+var line_function = d3.line()
+                      .x(function(d) { return d.x; })
+                      .y(function(d) { return d.y; });
+
+function draw_path(path_data, type) {
+    var gradient_path = gradient_path_g.selectAll(type)
+                        .data(path_data)
+                        .enter()
+                        .append("path")
+                        .attr("d", line_function(path_data.slice(0,1)))
+                        .attr("class", type)
+                        .attr("stroke-width", 2)
+                        .attr("fill", "none")
+                        .attr("stroke-opacity", 0.5)
+                        .transition()
+                        .duration(drawing_time)
+                        .delay(function(d,i) { return drawing_time * i; })
+                        .attr("d", function(d,i) { return line_function(path_data.slice(0,i+1));})
+                        .remove();
+
+    gradient_path_g.append("path")
+                   .attr("d", line_function(path_data))
+                   .attr("class", type)
+                   .attr("stroke-width", 1.5)
+                   .attr("fill", "none")
+                   .attr("stroke-opacity", 0.5)
+                   .attr("stroke-opacity", 0)
+                   .transition()
+                   .duration(path_data.length * drawing_time)
+                   .attr("stroke-opacity", 0.5);
+}
+
+/*
+ * Start minimization from click on contour map
+ */
+
+function mousedown() {
+    /* Get initial point */
+    var point = d3.mouse(this);
+    /* Minimize and draw paths */
+    minimize(scale_x(point[0]), scale_y(point[1]), document.getElementById("N_steps").value);
+}
+
+function minimize(x0, y0, N) {
+    gradient_path_g.selectAll("path").remove();
+
+    var lr0 = document.getElementById("LR").value;
+    var wd = document.getElementById("WD").value;
+
+    var lr_policy = "fixed",
+        // lr0 = 0.2,
+        rampup = 0,
+        lr_min = 0.0,
+        // wd = 0.1,
+        grad_noise = 0.0,
+        lamb = false,
+        decoupled_wd = false;
+
+    if (draw_bool.SGD) {
+        var sgd_data = optimize(f, grad_f, x0, y0, new SGD(document.getElementById("SGD-M").value),
+                                lr_policy, document.getElementById("SGD-LR").value, lr_min, rampup,
+                                document.getElementById("SGD-WD").value, decoupled_wd, grad_noise, lamb, N=N);
+        draw_path(sgd_data, "sgd");
+    }
+    if (draw_bool.Adam) {    
+        var adam_data = optimize(f, grad_f, x0, y0, new Adam(document.getElementById("Adam-Beta1").value, document.getElementById("Adam-Beta2").value),
+                                lr_policy, document.getElementById("Adam-LR").value, lr_min, rampup,
+                                document.getElementById("Adam-WD").value, decoupled_wd, grad_noise, lamb, N=N);
+        draw_path(adam_data, "adam");
+    }
+    if (draw_bool.AdamW) {
+        var adamw_data = optimize(f, grad_f, x0, y0, new Adam(document.getElementById("Adam-Beta1").value, document.getElementById("Adam-Beta2").value),
+                                lr_policy, document.getElementById("Adam-LR").value, lr_min, rampup,
+                                document.getElementById("Adam-WD").value, true, grad_noise, lamb, N=N);
+        draw_path(adamw_data, "adamw");
+    }
+    if (draw_bool.NovoGrad) { 
+        var novograd_data = optimize(f, grad_f, x0, y0, new NovoGrad(document.getElementById("Beta1").value, document.getElementById("Beta2").value),
+                                     lr_policy, lr0, lr_min, rampup,
+                                     wd, true, grad_noise, lamb, N=N);
+        draw_path(novograd_data, "novograd");
+    }
+}
+
+</script>
